@@ -8,10 +8,14 @@
   },
   "version": "5.0.3",
   "id": "nampe.gdvn",
-  "name": "Geometry Dash VN",
+  "name": "GDVN",
   "developer": "NamPE",
-  "description": "Geometry Dash VN helper mod",
-  "repository": "https://github.com/Demon-List-VN/geode-mod",
+  "description": "GDVN helper mod",
+  "links": {
+    "homepage": "https://gdvn.net",
+    "source": "https://github.com/Demon-List-VN/geode-mod",
+    "community": "https://discord.gg/fybxJ9Y344"
+  },
   "settings": {
     "auth": {
       "type": "custom:auth",
@@ -21,7 +25,7 @@
     "show-level-info": {
       "type": "bool",
       "name": "Show level info",
-      "description": "Show level's classic/platformer/challenge/featured list info",
+      "description": "Show level's list info",
       "default": true
     }
   }
