@@ -179,8 +179,8 @@ jobs:
             if (commits.length === 0) {
               core.warning('No commits found for release notes.');
               core.setOutput('notes', '');
-              core.setOutput('title', '');
-              core.setOutput('tag', '');
+              core.setOutput('title', process.env.VERSION);
+              core.setOutput('tag', process.env.VERSION);
               return;
             }
 
@@ -211,10 +211,10 @@ jobs:
             if (hasFix) items.push('- Bug fixes and improvements');
 
             if (items.length === 0) {
-              core.warning('No feat or fix commits found; skipping release creation.');
+              core.warning('No feat or fix commits found; creating release with blank changelog.');
               core.setOutput('notes', '');
-              core.setOutput('title', '');
-              core.setOutput('tag', '');
+              core.setOutput('title', process.env.VERSION);
+              core.setOutput('tag', process.env.VERSION);
               return;
             }
 
