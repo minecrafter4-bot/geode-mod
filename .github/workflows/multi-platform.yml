@@ -70,6 +70,7 @@ jobs:
 
           echo "version=$version" >> "$GITHUB_OUTPUT"
 
+<<<<<<< HEAD
       - name: Fetch version branch
         id: version_ref
         shell: bash
@@ -81,6 +82,8 @@ jobs:
             echo "found=false" >> "$GITHUB_OUTPUT"
           fi
 
+=======
+>>>>>>> 1af79c0 (upd)
       - uses: geode-sdk/build-geode-mod/combine@main
         id: build
 
@@ -117,45 +120,95 @@ jobs:
           name: Build Output
           path: ${{ steps.asset.outputs.path }}
 
+<<<<<<< HEAD
       - name: Resolve release notes from PR commits
         if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.version_ref.outputs.found == 'true'
+=======
+      - name: Check release tag
+        id: tag
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        shell: bash
+        run: |
+          if git ls-remote --exit-code --tags origin "refs/tags/${{ steps.mod.outputs.version }}" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "Tag '${{ steps.mod.outputs.version }}' already exists; skipping release generation."
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Resolve release notes
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.tag.outputs.exists == 'false'
+>>>>>>> 1af79c0 (upd)
         id: notes
         uses: actions/github-script@v7
         env:
-          VERSION_BRANCH: ${{ steps.mod.outputs.version }}
+          VERSION: ${{ steps.mod.outputs.version }}
         with:
           script: |
             const { owner, repo } = context.repo;
 
-            const versionBranch = process.env.VERSION_BRANCH;
+            let commits = [];
 
-            const allowedTypes = new Map([
-              ['feat', 'Features'],
-            ]);
-
-            const commits = await github.paginate(
-              github.rest.repos.compareCommitsWithBasehead,
+            const associatedPulls = await github.paginate(
+              github.rest.repos.listPullRequestsAssociatedWithCommit,
               {
                 owner,
                 repo,
-                basehead: `${versionBranch}...main`,
+                commit_sha: context.payload.after,
                 per_page: 100,
               },
-              response => response.data.commits,
             );
 
+            const mergedPull = associatedPulls.find((pull) => {
+              return pull.merged_at && pull.base.ref === 'main';
+            });
+
+            if (mergedPull) {
+              core.info(`Using commits from PR #${mergedPull.number} for release notes.`);
+              commits = await github.paginate(
+                github.rest.pulls.listCommits,
+                {
+                  owner,
+                  repo,
+                  pull_number: mergedPull.number,
+                  per_page: 100,
+                },
+              );
+            } else {
+              core.info('Using pushed commits for release notes.');
+              const before = context.payload.before;
+              const after = context.payload.after;
+
+              if (before && after && !/^0+$/.test(before)) {
+                commits = await github.paginate(
+                  github.rest.repos.compareCommitsWithBasehead,
+                  {
+                    owner,
+                    repo,
+                    basehead: `${before}...${after}`,
+                    per_page: 100,
+                  },
+                  response => response.data.commits,
+                );
+              } else {
+                commits = context.payload.commits || [];
+              }
+            }
+
             if (commits.length === 0) {
-              core.warning(`No commits found between ${versionBranch} and main.`);
+              core.warning('No commits found for release notes.');
               core.setOutput('notes', '');
               core.setOutput('title', '');
               core.setOutput('tag', '');
               return;
             }
 
-            const groups = new Map();
+            const featItems = [];
+            let hasFix = false;
 
             for (const commit of commits) {
-              const firstLine = (commit.commit.message || '').split('\n')[0].trim();
+              const message = commit.commit?.message || commit.message || '';
+              const firstLine = message.split('\n')[0].trim();
 
               const match = firstLine.match(
                 /^(?<type>[a-z]+)(?:\([^)]+\))?(?<breaking>!)?:\s+(?<subject>.+)$/i
@@ -166,39 +219,42 @@ jobs:
               const type = match.groups.type.toLowerCase();
               const subject = match.groups.subject.trim();
 
-              if (!allowedTypes.has(type)) continue;
-
-              const section = allowedTypes.get(type);
-              if (!groups.has(section)) groups.set(section, []);
-              groups.get(section).push(`- ${subject}`);
+              if (type === 'feat') {
+                featItems.push(`- ${subject}`);
+              } else if (type === 'fix') {
+                hasFix = true;
+              }
             }
 
-            const notes = [...groups.entries()]
-              .map(([section, items]) => `### ${section}\n${items.join('\n')}`)
-              .join('\n\n');
+            const items = [...featItems];
+            if (hasFix) items.push('- Bug fixes and improvements');
 
-            if (!notes) {
-              core.warning('No feat commits found; skipping release creation.');
+            if (items.length === 0) {
+              core.warning('No feat or fix commits found; skipping release creation.');
               core.setOutput('notes', '');
               core.setOutput('title', '');
               core.setOutput('tag', '');
               return;
             }
 
-            core.setOutput('title', versionBranch);
-            core.setOutput('tag', versionBranch);
-            core.setOutput('notes', notes);
+            core.setOutput('title', process.env.VERSION);
+            core.setOutput('tag', process.env.VERSION);
+            core.setOutput('notes', items.join('\n'));
 
       - name: Create GitHub release
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.notes.outputs.tag != ''
+        if: steps.notes.outputs.tag != ''
         uses: ncipollo/release-action@v1
         with:
-          allowUpdates: true
           artifactErrorsFailBuild: true
           artifacts: ${{ steps.asset.outputs.path }}
           body: ${{ steps.notes.outputs.notes }}
           commit: ${{ github.sha }}
           makeLatest: true
           name: ${{ steps.notes.outputs.title }}
+<<<<<<< HEAD
           replacesArtifacts: true
           tag: ${{ steps.notes.outputs.tag }}
+=======
+          skipIfReleaseExists: true
+          tag: ${{ steps.notes.outputs.tag }}
+>>>>>>> 1af79c0 (upd)
