@@ -69,7 +69,6 @@ jobs:
           fi
 
           echo "version=$version" >> "$GITHUB_OUTPUT"
-          echo "tag=v$version" >> "$GITHUB_OUTPUT"
 
       - name: Fetch version branch
         shell: bash
@@ -118,13 +117,11 @@ jobs:
         uses: actions/github-script@v7
         env:
           VERSION_BRANCH: ${{ steps.mod.outputs.version }}
-          RELEASE_TAG: ${{ steps.mod.outputs.tag }}
         with:
           script: |
             const { owner, repo } = context.repo;
 
             const versionBranch = process.env.VERSION_BRANCH;
-            const releaseTag = process.env.RELEASE_TAG;
 
             const allowedTypes = new Map([
               ['feat', 'Features'],
@@ -182,8 +179,8 @@ jobs:
               return;
             }
 
-            core.setOutput('title', releaseTag);
-            core.setOutput('tag', releaseTag);
+            core.setOutput('title', versionBranch);
+            core.setOutput('tag', versionBranch);
             core.setOutput('notes', notes);
 
       - name: Create GitHub release
