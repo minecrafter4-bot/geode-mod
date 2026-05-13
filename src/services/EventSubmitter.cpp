@@ -3,6 +3,7 @@
 #include <Geode/utils/web.hpp>
 
 #include "AuthService.hpp"
+#include "CheatGuard.hpp"
 #include "../common.hpp"
 
 async::TaskHolder<web::WebResponse> EventSubmitter::m_get_holder, EventSubmitter::m_put_holder;
@@ -27,6 +28,10 @@ EventSubmitter::EventSubmitter(int levelID): levelID(levelID) {
 
 void EventSubmitter::submit() {
 	if (!inEvent.load()) {
+		return;
+	}
+
+	if (!CheatGuard::canSubmitGameplayApi()) {
 		return;
 	}
 

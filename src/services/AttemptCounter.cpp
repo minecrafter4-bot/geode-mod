@@ -3,6 +3,7 @@
 #include <Geode/utils/web.hpp>
 
 #include "AuthService.hpp"
+#include "CheatGuard.hpp"
 #include "../common.hpp"
 
 async::TaskHolder<web::WebResponse> AttemptCounter::m_holder;
@@ -13,6 +14,10 @@ void AttemptCounter::add() {
 
 void AttemptCounter::submit() {
 	using namespace geode::prelude;
+
+	if (!CheatGuard::canSubmitGameplayApi()) {
+		return;
+	}
 
 	auto APIKey = AuthService::getToken();
 	std::string urlPath = "/players/heatmap/" + std::to_string(cnt);

@@ -3,6 +3,7 @@
 #include <Geode/utils/web.hpp>
 
 #include "AuthService.hpp"
+#include "CheatGuard.hpp"
 #include "../common.hpp"
 
 async::TaskHolder<web::WebResponse> PvpSubmitter::m_get_holder, PvpSubmitter::m_put_holder;
@@ -44,6 +45,10 @@ PvpSubmitter::PvpSubmitter(int levelID): levelID(levelID) {
 
 void PvpSubmitter::submit() {
 	if (!inPvp.load() || matchID <= 0) {
+		return;
+	}
+
+	if (!CheatGuard::canSubmitGameplayApi()) {
 		return;
 	}
 

@@ -3,6 +3,7 @@
 #include <Geode/utils/web.hpp>
 
 #include "AuthService.hpp"
+#include "CheatGuard.hpp"
 #include "../common.hpp"
 
 async::TaskHolder<web::WebResponse> DeathCounter::m_holder;
@@ -19,6 +20,10 @@ void DeathCounter::add(int percent) {
 
 void DeathCounter::submit() {
 	using namespace geode::prelude;
+
+	if (!CheatGuard::canSubmitGameplayApi()) {
+		return;
+	}
 
 	auto APIKey = AuthService::getToken();
 	std::string urlPath = "/deathCount/" + std::to_string(deathData.levelID) + "/" + deathData.serialize();
