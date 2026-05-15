@@ -33,6 +33,12 @@
       "name": "Show level info",
       "description": "Show level's list info",
       "default": true
+    },
+    "show-pvp-overlay": {
+      "type": "bool",
+      "name": "Show PvP overlay",
+      "description": "Show realtime PvP progress while playing an active match",
+      "default": true
     }
   }
 }
