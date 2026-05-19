@@ -13,11 +13,8 @@
 
 #include <Geode/Geode.hpp>
 #include <Geode/binding/PlayLayer.hpp>
-#include <Geode/cocos/CCDirector.h>
-#include <Geode/cocos/CCScheduler.h>
 #include <Geode/loader/Event.hpp>
 #include <Geode/utils/general.hpp>
-#include <legowiifun.cheat_api/include/cheatAPI.hpp>
 
 #ifdef GEODE_IS_WINDOWS
 #include <Geode/platform/windows.hpp>
@@ -108,6 +105,7 @@ namespace eclipse::__internal__ {
 
 namespace {
 	constexpr float FLOAT_EPSILON = 0.001f;
+	constexpr bool ENABLE_CONFIG_BASED_CHEAT_CHECKS = true;
 
 	geode::Mod* getLoadedMod(std::string_view id) {
 		return geode::Loader::get()->getLoadedMod(id);
@@ -120,16 +118,6 @@ namespace {
 	bool isStartPositionRun() {
 		auto playLayer = PlayLayer::get();
 		return playLayer && playLayer->m_startPosObject;
-	}
-
-	bool isCocosTimeScaleCheated() {
-		auto director = cocos2d::CCDirector::sharedDirector();
-		if (!director) {
-			return false;
-		}
-
-		auto scheduler = director->getScheduler();
-		return scheduler && differsFrom(scheduler->getTimeScale(), 1.0f);
 	}
 
 	bool isQolModModuleEnabled(geode::Mod* mod, std::string const& id, bool defaultValue = false) {
@@ -291,7 +279,7 @@ namespace {
 			return true;
 		}
 
-		if (vtable.CheckCheatsEnabled && vtable.CheckCheatsEnabled()) {
+		if (ENABLE_CONFIG_BASED_CHEAT_CHECKS && vtable.CheckCheatsEnabled && vtable.CheckCheatsEnabled()) {
 			return true;
 		}
 
@@ -320,40 +308,32 @@ namespace {
 }
 
 bool CheatGuard::isGameplayCheated() {
-	if (isStartPositionRun() || isCocosTimeScaleCheated()) {
-		return true;
-	}
+	return CheatGuard::getGameplayCheatReason().has_value();
+}
 
-	static constexpr std::array rulesetsToCheck = {
-		ROBTOP,
-		DEMONLIST,
-		GDDL,
-		MODMAKEROPINION,
-		AREDL,
-		PEMONLIST,
-	};
-
-	for (auto ruleset : rulesetsToCheck) {
-		if (cheatAPI::isCheating(ruleset)) {
-			return true;
-		}
-	}
-
-	if (isQolModCheated()) {
-		return true;
+std::optional<std::string_view> CheatGuard::getGameplayCheatReason() {
+	if (isStartPositionRun()) {
+		return "start position";
 	}
 
 	if (isEclipseCheated()) {
-		return true;
+		return "Eclipse cheat state";
 	}
 
-	if (isPrismCheated()) {
-		return true;
+	if constexpr (ENABLE_CONFIG_BASED_CHEAT_CHECKS) {
+		if (isQolModCheated()) {
+			return "QOLMod config";
+		}
+
+		if (isPrismCheated()) {
+			return "Prism config";
+		}
+
 	}
 
 	if (isOpenHackCheated()) {
-		return true;
+		return "OpenHack runtime state";
 	}
 
-	return false;
+	return std::nullopt;
 }

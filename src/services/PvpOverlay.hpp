@@ -46,7 +46,6 @@ private:
 	struct ChatMessage {
 		std::int64_t id = 0;
 		std::string senderUid;
-		std::string senderName;
 		std::string type;
 		std::string content;
 		bool senderAnonymous = false;
@@ -87,11 +86,14 @@ private:
 
 	std::int64_t m_latestMessageID = 0;
 	std::int64_t m_realtimeTokenExpiresAt = 0;
+	std::int64_t m_matchEndsAtEpoch = 0;
+	std::int64_t m_lastCountdownSeconds = -1;
 	std::string m_currentUid;
 	std::string m_supabaseUrl;
 	std::string m_anonKey;
 	std::string m_realtimeAccessToken;
 	std::string m_topic;
+	std::string m_mode = "classic";
 	PlayerProgress m_self;
 	PlayerProgress m_opponent;
 	std::vector<ChatMessage> m_chatMessages;
@@ -115,6 +117,8 @@ private:
 	void handleMessagesPayload(matjson::Value const& json, bool animateNew);
 	void handleMessageRow(matjson::Value const& row, bool animateNew);
 	void parseMatchSnapshot(matjson::Value const& json);
+	std::string formatSystemMessage(matjson::Value const& metadata) const;
+	std::string getChatSenderLabel(ChatMessage const& message) const;
 	void pushRecentMessage(ChatMessage const& message);
 	void layoutRecentMessages();
 	void updateRecentMessages(float dt);
@@ -126,5 +130,7 @@ private:
 	bool isReadyForRealtime() const;
 	bool isActiveStatus(std::string const& status) const;
 	bool isCompletedStatus(std::string const& status) const;
+	bool isPlatformerMode() const;
+	std::string formatProgressLabel(float progress) const;
 	std::string nextRef();
 };

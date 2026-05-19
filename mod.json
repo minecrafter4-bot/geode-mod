@@ -6,7 +6,7 @@
     "mac": "2.2081",
     "ios": "2.2081"
   },
-  "version": "5.0.6",
+  "version": "5.0.7",
   "id": "nampe.gdvn",
   "name": "GDVN",
   "developer": "NamPE",
@@ -15,12 +15,6 @@
     "homepage": "https://gdvn.net",
     "source": "https://github.com/Demon-List-VN/geode-mod",
     "community": "https://discord.gg/fybxJ9Y344"
-  },
-  "dependencies": {
-    "legowiifun.cheat_api": {
-      "version": ">=1.2.3",
-      "required": true
-    }
   },
   "settings": {
     "auth": {
