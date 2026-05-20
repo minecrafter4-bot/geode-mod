@@ -14,7 +14,6 @@
 #include <Geode/Geode.hpp>
 #include <Geode/binding/PlayLayer.hpp>
 #include <Geode/loader/Event.hpp>
-#include <Geode/utils/general.hpp>
 
 #ifdef GEODE_IS_WINDOWS
 #include <Geode/platform/windows.hpp>
@@ -124,11 +123,6 @@ namespace {
 		return mod->getSavedValue<bool>(id + "_enabled", defaultValue);
 	}
 
-	float getQolModSpeedhackValue(geode::Mod* mod) {
-		auto value = mod->getSavedValue<std::string>("speedhack-top_value", "1.0");
-		return geode::utils::numFromString<float>(value).unwrapOr(1.0f);
-	}
-
 	bool isQolModCheated() {
 		auto mod = getLoadedMod("thesillydoggo.qolmod");
 
@@ -185,13 +179,6 @@ namespace {
 					return true;
 				}
 			}
-		}
-
-		if (
-			(isQolModModuleEnabled(mod, "speedhack/enabled") || isQolModModuleEnabled(mod, "speedhack-enabled")) &&
-			differsFrom(getQolModSpeedhackValue(mod), 1.0f)
-		) {
-			return true;
 		}
 
 		return false;
