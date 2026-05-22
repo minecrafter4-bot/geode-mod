@@ -7,15 +7,27 @@
 using namespace geode::prelude;
 
 class $modify(GDVNCreatorLayer, CreatorLayer) {
-	bool init() {
-		if (!CreatorLayer::init()) {
-			return false;
-		}
+    bool init() {
+        if (!CreatorLayer::init()) {
+            return false;
+        }
 
-		return true;
-	}
+        NodeIDs::provideFor(this);
 
-	void onMultiplayer(CCObject*) {
-		web::openLinkInBrowser("https://gdvn.net/versus/play");
-	}
+        auto btn = typeinfo_cast<CCMenuItemSpriteExtra*>(this->getChildByIDRecursive("versus-button"));
+
+        if (!btn) {
+            return true;
+        }
+
+        btn->setSprite(
+            CCSprite::createWithSpriteFrameName("GJ_versusBtn_001.png"));
+		btn->setScale(0.8f);
+
+        return true;
+    }
+
+    void onMultiplayer(CCObject*) {
+        web::openLinkInBrowser("https://gdvn.net/versus");
+    }
 };

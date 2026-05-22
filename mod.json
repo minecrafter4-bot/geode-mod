@@ -11,6 +11,12 @@
   "name": "GDVN",
   "developer": "NamPE",
   "description": "GDVN helper mod",
+  "dependencies": {
+    "geode.node-ids": {
+      "version": ">=v1.10.0",
+      "required": true
+    }
+  },
   "links": {
     "homepage": "https://gdvn.net",
     "source": "https://github.com/Demon-List-VN/geode-mod",
