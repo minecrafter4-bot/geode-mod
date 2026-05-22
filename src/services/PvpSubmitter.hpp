@@ -2,6 +2,7 @@
 
 #include <Geode/Geode.hpp>
 #include <Geode/utils/web.hpp>
+#include <array>
 #include <atomic>
 #include <memory>
 
@@ -12,6 +13,8 @@ class PvpSubmitter {
 		int levelID = 0;
 		int matchID = 0;
 		float best = 0;
+		std::array<size_t, 100> pendingDeathCount = {};
+		std::atomic<bool> deathSubmitInFlight{ false };
 		bool platformer = false;
 		std::atomic<bool> inPvp{ false };
 
@@ -19,9 +22,12 @@ class PvpSubmitter {
 	};
 
 	std::shared_ptr<State> m_state;
-	static async::TaskHolder<web::WebResponse> m_get_holder, m_put_holder;
+	static async::TaskHolder<web::WebResponse> m_get_holder, m_put_holder, m_death_holder;
 
 	void submit(bool completed = false);
+	static void submitDeathCount(std::shared_ptr<State> state);
+	static std::string serializeDeathCount(std::array<size_t, 100> const& count);
+	static size_t sumDeathCount(std::array<size_t, 100> const& count);
 
 public:
 	PvpSubmitter();
@@ -29,6 +35,8 @@ public:
 	PvpSubmitter(int levelID);
 	bool isPlatformerPvp() const;
 	void record(float progress);
+	void recordDeath(float progress);
+	void flushDeathCount();
 	void recordCheckpoint(int count);
 	void completePlatformer(int count);
 };

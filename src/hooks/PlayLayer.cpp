@@ -102,7 +102,7 @@ class $modify(DTPlayLayer, PlayLayer) {
 		refreshCheatGuardReason();
 
 		if (AuthService::isLoggedIn() && !m_isPracticeMode) {
-			m_fields->pvpOverlay = new PvpOverlay(this, id);
+			m_fields->pvpOverlay = new PvpOverlay(this, id, m_fields->pvpSubmitter);
 		}
 
 		return true;
@@ -146,7 +146,7 @@ class $modify(DTPlayLayer, PlayLayer) {
 		m_fields->deathCounter.add(progress);
 		m_fields->eventSubmitter->record(progress);
 		m_fields->raidSubmitter->record(progress);
-		m_fields->pvpSubmitter->record(progress);
+		m_fields->pvpSubmitter->recordDeath(progress);
 	}
 
 	void levelComplete() {
@@ -168,6 +168,7 @@ class $modify(DTPlayLayer, PlayLayer) {
 			m_fields->eventSubmitter->record(100);
 			m_fields->raidSubmitter->record(100);
 			m_fields->pvpSubmitter->record(100);
+			m_fields->pvpSubmitter->flushDeathCount();
 			m_fields->deathCounter.setCompleted(true);
 		}
 	}
@@ -218,6 +219,9 @@ class $modify(DTPlayLayer, PlayLayer) {
 		} else if (!m_level->isPlatformer()) {
 			m_fields->attemptCounter.submit();
 			m_fields->deathCounter.submit();
+		}
+		if (!m_level->isPlatformer()) {
+			m_fields->pvpSubmitter->flushDeathCount();
 		}
 
 		delete m_fields->eventSubmitter;

@@ -1,6 +1,7 @@
 #include "PvpOverlay.hpp"
 
 #include "AuthService.hpp"
+#include "PvpSubmitter.hpp"
 #include "../common.hpp"
 
 #include <Geode/binding/ButtonSprite.hpp>
@@ -465,7 +466,7 @@ private:
 	}
 };
 
-PvpOverlay::PvpOverlay(PlayLayer* layer, int levelID) : m_layer(layer), m_levelID(levelID) {
+PvpOverlay::PvpOverlay(PlayLayer* layer, int levelID, PvpSubmitter* submitter) : m_layer(layer), m_submitter(submitter), m_levelID(levelID) {
 	s_activeOverlay = this;
 	m_chatMuted = Mod::get()->getSavedValue<bool>("pvp-chat-muted", false);
 	this->createLabel();
@@ -920,9 +921,13 @@ void PvpOverlay::handleResultRow(matjson::Value const& row) {
 
 	m_opponent.uid = uid;
 	m_opponent.progress = std::max(m_opponent.progress, progress);
+	if (progress >= 100.0f && m_submitter) {
+		m_submitter->flushDeathCount();
+	}
 }
 
 void PvpOverlay::handleMatchRow(matjson::Value const& row) {
+	const bool wasActive = m_active;
 	if (getString(row, "mode") == "platformer") {
 		m_mode = "platformer";
 	}
@@ -935,6 +940,9 @@ void PvpOverlay::handleMatchRow(matjson::Value const& row) {
 	m_active = this->isActiveStatus(status);
 	m_chatOpen = m_active || this->isCompletedStatus(status);
 	m_chatGraceTimer = this->isCompletedStatus(status) ? CHAT_GRACE_SECONDS : -1.0f;
+	if (wasActive && this->isCompletedStatus(status) && m_submitter) {
+		m_submitter->flushDeathCount();
+	}
 	this->refreshLabel();
 	this->setOverlayVisible(m_active);
 	this->refreshChatVisibility();
@@ -1283,6 +1291,9 @@ void PvpOverlay::update(float dt) {
 	if (m_active && m_matchEndsAtEpoch > 0) {
 		auto countdownSeconds = std::max<std::int64_t>(0, m_matchEndsAtEpoch - currentEpochSeconds());
 		if (countdownSeconds != m_lastCountdownSeconds) {
+			if (countdownSeconds == 0 && m_lastCountdownSeconds != 0 && m_submitter) {
+				m_submitter->flushDeathCount();
+			}
 			this->refreshLabel();
 		}
 	}

@@ -13,10 +13,11 @@
 using namespace geode::prelude;
 
 class PvpChatPopup;
+class PvpSubmitter;
 
 class PvpOverlay final : public PvpRealtimeSocketDelegate {
 public:
-	explicit PvpOverlay(PlayLayer* layer, int levelID);
+	explicit PvpOverlay(PlayLayer* layer, int levelID, PvpSubmitter* submitter = nullptr);
 	~PvpOverlay() override;
 
 	static PvpOverlay* getActive();
@@ -61,6 +62,7 @@ private:
 	CCLabelBMFont* m_label = nullptr;
 	CCNode* m_chatStack = nullptr;
 	PvpChatPopup* m_chatPopup = nullptr;
+	PvpSubmitter* m_submitter = nullptr;
 	std::shared_ptr<PvpRealtimeSocket> m_socket;
 	async::TaskHolder<web::WebResponse> m_matchHolder;
 	async::TaskHolder<web::WebResponse> m_tokenHolder;

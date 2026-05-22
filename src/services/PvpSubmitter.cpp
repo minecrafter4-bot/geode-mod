@@ -1,11 +1,13 @@
 #include "PvpSubmitter.hpp"
 #include <Geode/Geode.hpp>
 #include <Geode/utils/web.hpp>
+#include <algorithm>
+#include <cmath>
 
 #include "AuthService.hpp"
 #include "../common.hpp"
 
-async::TaskHolder<web::WebResponse> PvpSubmitter::m_get_holder, PvpSubmitter::m_put_holder;
+async::TaskHolder<web::WebResponse> PvpSubmitter::m_get_holder, PvpSubmitter::m_put_holder, PvpSubmitter::m_death_holder;
 
 PvpSubmitter::PvpSubmitter() : m_state(std::make_shared<State>()) {}
 
@@ -65,6 +67,65 @@ void PvpSubmitter::submit(bool completed) {
 	m_put_holder.spawn(req.put(url), [](web::WebResponse res) {});
 }
 
+void PvpSubmitter::submitDeathCount(std::shared_ptr<State> state) {
+	if (!state || !state->inPvp.load() || state->platformer || state->matchID <= 0) {
+		return;
+	}
+
+	const auto count = state->pendingDeathCount;
+	if (sumDeathCount(count) <= 0) {
+		return;
+	}
+
+	bool expected = false;
+	if (!state->deathSubmitInFlight.compare_exchange_strong(expected, true)) {
+		return;
+	}
+
+	web::WebRequest req = web::WebRequest();
+	std::string url = API_URL + "/pvp/matches/" + std::to_string(state->matchID) + "/deaths?count=" + serializeDeathCount(count);
+	std::string APIKey = AuthService::getToken();
+
+	req.header("Authorization", "Bearer " + APIKey);
+	std::weak_ptr<State> weakState = state;
+	m_death_holder.spawn(req.post(url), [weakState, count](web::WebResponse res) {
+		if (auto locked = weakState.lock()) {
+			if (res.ok()) {
+				for (size_t i = 0; i < locked->pendingDeathCount.size(); i++) {
+					locked->pendingDeathCount[i] -= std::min(locked->pendingDeathCount[i], count[i]);
+				}
+			}
+			locked->deathSubmitInFlight.store(false);
+
+			if (res.ok() && PvpSubmitter::sumDeathCount(locked->pendingDeathCount) >= 100) {
+				PvpSubmitter::submitDeathCount(locked);
+			}
+		}
+	});
+}
+
+std::string PvpSubmitter::serializeDeathCount(std::array<size_t, 100> const& count) {
+	std::string res;
+
+	for (size_t value : count) {
+		res += std::to_string(value) + "|";
+	}
+
+	if (!res.empty()) {
+		res.pop_back();
+	}
+
+	return res;
+}
+
+size_t PvpSubmitter::sumDeathCount(std::array<size_t, 100> const& count) {
+	size_t total = 0;
+	for (size_t value : count) {
+		total += value;
+	}
+	return total;
+}
+
 bool PvpSubmitter::isPlatformerPvp() const {
 	return m_state && m_state->inPvp.load() && m_state->platformer;
 }
@@ -76,6 +137,36 @@ void PvpSubmitter::record(float progress) {
 
 	m_state->best = progress;
 	submit();
+}
+
+void PvpSubmitter::recordDeath(float progress) {
+	if (
+		!m_state ||
+		!m_state->inPvp.load() ||
+		m_state->platformer ||
+		!std::isfinite(progress) ||
+		progress < 0.0f ||
+		progress > 100.0f
+	) {
+		return;
+	}
+
+	const int percent = std::clamp(static_cast<int>(progress), 0, 99);
+	m_state->pendingDeathCount[percent]++;
+	if (progress > m_state->best) {
+		m_state->best = progress;
+		submit();
+		flushDeathCount();
+		return;
+	}
+
+	if (sumDeathCount(m_state->pendingDeathCount) >= 100) {
+		flushDeathCount();
+	}
+}
+
+void PvpSubmitter::flushDeathCount() {
+	submitDeathCount(m_state);
 }
 
 void PvpSubmitter::recordCheckpoint(int count) {
