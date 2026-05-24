@@ -11,6 +11,7 @@ using namespace gdvn::level_info;
 class $modify(LevelInfoLayer) {
 	struct Fields {
 		async::TaskHolder<web::WebResponse> m_holder;
+		bool m_confirmedLoggedOutPlay = false;
 	};
 
 	bool init(GJGameLevel* level, bool a) {
@@ -76,5 +77,36 @@ class $modify(LevelInfoLayer) {
 	    }
 
 		return true;
+	}
+
+	void onPlay(CCObject* sender) {
+		if (!AuthService::isLoggedIn() && !m_fields->m_confirmedLoggedOutPlay) {
+			this->retain();
+			if (sender) {
+				sender->retain();
+			}
+
+			geode::createQuickPopup(
+				"GDVN",
+				"You are not logged in, progress will not be saved to GDVN server.",
+				"Cancel",
+				"Play",
+				[this, sender](auto, bool btn2) {
+					if (btn2) {
+						m_fields->m_confirmedLoggedOutPlay = true;
+						LevelInfoLayer::onPlay(sender);
+						m_fields->m_confirmedLoggedOutPlay = false;
+					}
+
+					if (sender) {
+						sender->release();
+					}
+					this->release();
+				}
+			);
+			return;
+		}
+
+		LevelInfoLayer::onPlay(sender);
 	}
 };
