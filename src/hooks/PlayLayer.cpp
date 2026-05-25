@@ -11,7 +11,6 @@
 #include "../services/RaidSubmitter.hpp"
 #include "../services/PvpSubmitter.hpp"
 #include "../services/PvpOverlay.hpp"
-#include "../services/CheatGuard.hpp"
 #include "../services/AuthService.hpp"
 
 using namespace geode::prelude;
