@@ -18,7 +18,7 @@ file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS
 	src/*.cpp src/*.hpp src/*.h
 )
 
-add_library(${PROJECT_NAME} SHARED ${SOURCES}
+add_library(${PROJECT_NAME} SHARED ${SOURCES})
 
 if (WIN32)
     set_source_files_properties(src/services/PvpRealtimeSocket.cpp PROPERTIES SKIP_PRECOMPILE_HEADERS ON)
